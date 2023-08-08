@@ -1,73 +1,67 @@
-class Contact:
-    def __init__(self, name, phone, email):
-        self.name = name
-        self.phone = phone
-        self.email = email
-
-    def __str__(self):
-        return f"Name: {self.name}, Phone: {self.phone}, Email: {self.email}"
-
 import json
 
 class ContactManager:
     def __init__(self):
         self.contacts = []
         self.file_name = "contacts.json"
+        self.load_contacts_from_file()
 
     def save_contacts_to_file(self):
         with open(self.file_name, "w") as file:
-            json.dump([vars(contact) for contact in self.contacts], file)
+            json.dump(self.contacts, file)
 
     def load_contacts_from_file(self):
         try:
             with open(self.file_name, "r") as file:
-                data = json.load(file)
-                self.contacts = [Contact(contact["name"], contact["phone"], contact["email"]) for contact in data]
+                self.contacts = json.load(file)
         except FileNotFoundError:
             pass
 
     def add_contact(self, name, phone, email):
-        contact = Contact(name, phone, email)
+        contact = {
+            "name": name,
+            "phone": phone,
+            "email": email
+        }
         self.contacts.append(contact)
         self.save_contacts_to_file()
         print("Contact added successfully!")
 
-    def view_contacts(self):
-        if not self.contacts:
-            print("No contacts found.")
-        else:
-            for contact in self.contacts:
-                print(contact)
+    def search_contact(self, name):
+        matching_contacts = [contact for contact in self.contacts if contact["name"].lower() == name.lower()]
+        return matching_contacts
 
-    def update_contact(self, index, name, phone, email):
-        if 0 <= index < len(self.contacts):
-            self.contacts[index].name = name
-            self.contacts[index].phone = phone
-            self.contacts[index].email = email
+    def update_contact(self, name, new_phone, new_email):
+        matching_contacts = self.search_contact(name)
+        if matching_contacts:
+            for contact in matching_contacts:
+                contact["phone"] = new_phone
+                contact["email"] = new_email
             self.save_contacts_to_file()
             print("Contact updated successfully!")
         else:
-            print("Invalid index. Contact not found.")
+            print("Contact not found.")
 
-    def delete_contact(self, index):
-        if 0 <= index < len(self.contacts):
-            del self.contacts[index]
+    def delete_contact(self, name):
+        matching_contacts = self.search_contact(name)
+        if matching_contacts:
+            self.contacts = [contact for contact in self.contacts if contact not in matching_contacts]
             self.save_contacts_to_file()
-            print("Contact deleted successfully!")
+            print("Contact(s) deleted successfully!")
         else:
-            print("Invalid index. Contact not found.")
+            print("Contact not found.")
 
 def main():
     contact_manager = ContactManager()
-    contact_manager.load_contacts_from_file()
 
     while True:
         print("\nOptions:")
         print("1 - Add Contact")
-        print("2 - View Contacts")
+        print("2 - Search Contact")
         print("3 - Update Contact")
         print("4 - Delete Contact")
-        print("5 - Exit")
+        print("5 - View All Contacts")
+        print("6 - Exit")
 
         choice = input("Enter your choice: ")
 
@@ -78,20 +72,33 @@ def main():
             contact_manager.add_contact(name, phone, email)
 
         elif choice == "2":
-            contact_manager.view_contacts()
+            name = input("Enter name to search: ")
+            matching_contacts = contact_manager.search_contact(name)
+            if matching_contacts:
+                for contact in matching_contacts:
+                    print(f"Name: {contact['name']}, Phone: {contact['phone']}, Email: {contact['email']}")
+            else:
+                print("No matching contacts found.")
 
         elif choice == "3":
-            index = int(input("Enter the index of the contact to update: "))
-            name = input("Enter new name: ")
-            phone = input("Enter new phone number: ")
-            email = input("Enter new email address: ")
-            contact_manager.update_contact(index, name, phone, email)
+            name = input("Enter name to update: ")
+            new_phone = input("Enter new phone number: ")
+            new_email = input("Enter new email address: ")
+            contact_manager.update_contact(name, new_phone, new_email)
 
         elif choice == "4":
-            index = int(input("Enter the index of the contact to delete: "))
-            contact_manager.delete_contact(index)
+            name = input("Enter name to delete: ")
+            contact_manager.delete_contact(name)
 
         elif choice == "5":
+            if contact_manager.contacts:
+                print("All Contacts:")
+                for contact in contact_manager.contacts:
+                    print(f"Name: {contact['name']}, Phone: {contact['phone']}, Email: {contact['email']}")
+            else:
+                print("No contacts found.")
+
+        elif choice == "6":
             print("Exiting")
             break
 
